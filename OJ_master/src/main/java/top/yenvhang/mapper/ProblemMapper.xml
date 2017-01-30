@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.yenvhang.mapper.ProblemMapper">
+	<resultMap type="top.yenvhang.model.Problem" id="problemResult">
+		<id property="problem_id" column="problem_id"/>
+		<result property="title" column="title"/>
+		<result property="submitted" column="submitted"/>
+		<result property="solved" column="solved"/>
+		<result property="level" column="level"/>
+		<result property="author" column="author"/>
+		<result property="score" column="score"/>
+	</resultMap>
+
+	<select id="getProblemsUsingFilter" parameterType="map" resultMap="problemResult"
+	useCache="true">
+		select * from oj_problems LIMIT #{start},#{limit}
+	</select>
+	
+	<select id="getFirstIndexOfProblems" resultType="int" 
+	useCache="true">
+		select MIN(problem_id) from oj_problems 
+	</select>
+	
+	<select id="getNumsofProblems" resultType="int"
+	useCache="true">
+		select count(*) from oj_problems
+	</select>
+	<select id="getProblemById" parameterType="long" resultType="top.yenvhang.model.Problem"
+	useCache="true">
+		select problem_id,title,content,input,output,input_sample,output_sample,hint
+		,join_date,memory_limit,time_limit,submitted,solved,level,score,author from oj_problems where problem_id =#{problem_id}
+	</select>
+	
+	<update id="updateProblemMessage" parameterType="map">
+		update oj_problems
+		set submitted=#{submitted},solved=#{solved}
+		where problem_id=#{problem_id}
+	</update>
+	
+	<insert id="insertProblem" parameterType="top.yenvhang.model.Problem">
+		insert into oj_problems(title,content,input,output
+	,input_sample,output_sample,hint,join_date,memory_limit
+	,time_limit,submitted,solved,level,author,score) values(#{title},#{content},#{input},#{output}
+	,#{input_sample},#{output_sample},#{hint},#{join_date},#{memory_limit}
+	,#{time_limit},#{submitted},#{solved},#{level},#{author},#{score})
+	</insert>
+	
+</mapper>

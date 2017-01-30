@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.yenvhang.mapper.CommentMapper">
+	
+	<resultMap type="top.yenvhang.model.Comment" id="commentResult">
+		<id property="comment_id" column="comment_id"/>
+		<result property="content" column="content"/> 
+		<result property="entity_id" column="entity_id"/>
+		<result property="entity_type" column="entity_type" />
+		<result property="createTime" column="create_time"/>
+		<result property="hasRead" column="hasRead"/>
+		<association property="from" column="from_id" javaType="top.yenvhang.model.User"
+		select="top.yenvhang.mapper.UserMapper.getUserUsingUser_id"></association>
+		<association property="to" column="to_id" javaType="top.yenvhang.model.User"
+		select="top.yenvhang.mapper.UserMapper.getUserUsingUser_id"></association>
+		 
+	</resultMap>
+	
+	<select id="getCommentsByEntityId" resultMap="commentResult" parameterType="map">
+		select comment_id,content,entity_id,entity_type,create_time,from_id,to_id from oj_comments
+		where entity_id=#{entity_id} and entity_type=#{entity_type} order by create_time asc
+	</select>
+	
+	<select id="getCountNewMessages"  resultType="long" parameterType="map">
+		select count(*) from oj_comments where to_id=#{to_id} and from_id=#{from_id} and status=1
+	</select>
+
+<!-- 	<select id="getNewComments" resultType="top.yenvhang.model.MultipleComment" parameterType="map">
+		select b.content as subject,a.*  from oj_comments a,oj_comments b where a.to_id=#{to_id} and a.entity_id=b.comment_id  ;
+	</select> -->
+	
+	<select id="getNewComments" resultMap="commentResult" parameterType="map">
+		select comment_id,from_id from oj_comments where to_id=#{to_id} and hasRead=false
+	</select>
+	
+	<select id="getMultipleComment" resultType="top.yenvhang.model.MultipleComment" parameterType="map">
+	select a.*,b.content as subject from oj_comments a,oj_comments b where a.comment_id =#{commentId} and a.entity_id=b.comment_id;
+	</select>
+	
+	<insert id="createComment" parameterType="top.yenvhang.model.Comment">
+		insert into oj_comments (content,entity_id,entity_type,from_id,to_id)
+		values(#{content},#{entity_id},#{entity_type},#{from.user_id},#{to.user_id})
+	</insert>
+	
+	<update id="updateComment" parameterType="top.yenvhang.model.Comment">
+		update oj_comments 
+		<set>
+			<if test="content!=null"> 
+				content=#{content},
+			</if>
+			<if test="hasRead!=null">
+				hasRead=#{hasRead},
+			</if>
+		</set>
+		where comment_id=#{comment_id}
+	</update>
+	
+
+</mapper>

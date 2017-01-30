@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.yenvhang.mapper.UserMapper">
+	<resultMap type="top.yenvhang.model.User" id="UserResult">
+		<id property="user_id" column="user_id"/>
+		<result property="username" column="username"/>
+		<result property="password" column="password"/>
+		<result property="email" column="email" />
+		<result property="phone" column="phone"/>
+		<result property="ip" column="ip"/>
+		<result property="school" column="school"/>
+		<result property="submitted" column="submitted"/>
+		<result property="solved" column="solved"/>
+		<result property="score" column="score"/>
+		<result property="signature" column="signature"/>
+	</resultMap> 
+	<update id="updateUserMessage" parameterType="map">
+		update oj_users 
+		set submitted=#{submitted},solved=#{solved},score=#{score}
+		where user_id =#{user_id}
+	</update>
+	
+	<select id="getUserUsingUsername" parameterType="String" resultMap="UserResult">
+		select * from oj_users where username=#{username}
+	</select>
+	<select id="getUserUsingEmail" parameterType="String" resultMap="UserResult">
+		select * from oj_users where email=#{email}
+	</select>
+	<select id="getUserUsingUser_id" parameterType="long" resultMap="UserResult">
+		select * from oj_users where user_id=#{user_id}
+	</select>
+	<!--获取排序后的用户列表  -->
+	<select id="getUsers" parameterType="map" resultMap="UserResult">
+		select user_id,username,signature,score,solved,submitted 
+		from oj_users 
+		order by score desc,solved desc,submitted asc
+		LIMIT #{start},#{limit}
+	</select>
+	
+	<!-- 获取指定用户的排名 -->
+	<select id="getRankUsingUserId" parameterType="long" resultType="long">
+		select temp.num from(
+		SELECT user_id,@rownum:=@rownum+1 as num FROM oj.oj_users u,(select @rownum:=0) r 
+		order  by score desc,solved desc,submitted asc) 
+		temp where user_id=#{user_id};
+	</select>
+	
+	
+	<!-- 获取用户数量 -->
+	<select id="getNumsofUsers" resultType="long">
+		select count(*) from oj_users
+	</select>
+	
+	<insert id="insertUser" parameterType="top.yenvhang.model.User">
+		insert into oj_users(username,password,email,submitted,solved,score,signature) values(
+		#{username},#{password},#{email},#{submitted},#{solved},#{score},#{signature})
+	</insert>
+	
+</mapper>

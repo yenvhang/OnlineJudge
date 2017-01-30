@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.yenvhang.mapper.SubmissionMapper">
+	<resultMap type="top.yenvhang.model.Submission" id="submissionResult">
+		<id property="submission_id" column="submission_id" />
+		<result property="submitTime" column="submitTime" />
+		<result property="executeTime" column="executeTime" />
+		<result property="useTime" column="useTime" />
+		<result property="usememory" column="usememory" />
+		<result property="judgeScore" column="judgeScore" />
+		<association property="problem" javaType="top.yenvhang.model.Problem"
+			column="problem_id" select="top.yenvhang.mapper.ProblemMapper.getProblemById" />
+		<association property="user" javaType="top.yenvhang.model.User"
+			column="user_id" select="top.yenvhang.mapper.UserMapper.getUserUsingUser_id" />
+		<association property="judgeResult" javaType="top.yenvhang.model.JudgeResult"
+			column="result_id" select="top.yenvhang.mapper.JudgeResultMapper.getJudgeResult" />
+	</resultMap>
+	
+	<resultMap type="top.yenvhang.model.Sort" id="weekSortResult">
+		<result property="acceptCount" column="acceptCount"/>
+		<result property="submitCount" column="submitCount"/>
+		<association property="user" javaType="top.yenvhang.model.User"
+			column="user_id" select="top.yenvhang.mapper.UserMapper.getUserUsingUser_id"/>
+	</resultMap>
+
+	<insert id="insertSubmission" parameterType="top.yenvhang.model.Submission">
+		insert into
+		oj_submissions(submitTime,executeTime,useTime,usememory,judgeScore,user_id,problem_id,result_id)
+		values(#{submitTime},#{executeTime},#{useTime},#{usememory},#{judgeScore},
+		#{user.user_id},#{problem.problem_id},#{judgeResult.result_id})
+	</insert>
+	<!-- 
+	<insert id="insertSubmission" parameterType="top.yenvhang.model.Submission">
+		insert into
+		oj_submissions(submitTime,code,user_id,problem_id)
+		values(#{submitTime},#{code},
+		#{user.user_id},#{problem.problem_id})
+	</insert>
+	 -->
+	<!--获取完成指定题目的排序用户列表  -->
+	<select id="getUsersACUsingProblemId" parameterType="map" resultMap="submissionResult">
+		select any_value(user_id) as user_id,any_value(judgeScore) as judgeScore,any_value(useTime) as useTime,any_value(usememory) as usememory,any_value(submitTime) as submitTime from
+			(SELECT @num:=@num+1 as rank,a.* FROM oj.oj_submissions a,(select @num :=0) b  where result_id =1 and problem_id=#{problem_id} order by judgeScore desc,useTime asc,usememory asc,submitTime asc) temp
+		group by user_id order by any_value(rank) asc
+		LIMIT #{start},#{limit}
+	</select>
+	
+	<!--获取完成指定题目的提交通过数  -->
+	<select id="getNumsOfACsubmissionUsingProblemId" parameterType="long" resultType="long">
+			select count(*) from (select distinct judgeScore,user_id,problem_id,useTime,usememory from oj_submissions where problem_id = #{problem_id} and result_id=1) temp;
+	</select>
+	
+	<!-- 获取指定题目中，指定用户的排名 -->
+	<select id="getRankUsingProblemAndUserId" parameterType="map" resultType="long">
+		select min(temp2.rank) from(
+			select  temp.user_id,@rownum:=@rownum+1 as rank from 
+		(select distinct user_id,judgeScore,useTime,usememory from oj_submissions s,(select @rownum:=0) r where result_id=1 and problem_id=#{problem_id} order by judgeScore desc,useTime asc,usememory asc) temp 
+        ) temp2 where temp2.user_id=#{user_id} ;
+	</select>
+	
+	<!-- 已经通过的题目 -->
+	<select id="getSolvedProblemIds" resultType="long" parameterType="long">
+		select distinct problem_id from oj_submissions where result_id=1 and user_id=#{user_id}
+	</select> 
+	<!-- 正在攻客的题目 -->
+	<select id="getBeingSolvedProbelmIds" resultType="long" parameterType="long">
+		select problem_id from oj_submissions where result_id!=1 and user_id=#{user_id} and problem_id not in(select distinct problem_id from oj_submissions where result_id=1 and user_id=#{user_id});
+	</select> 
+	
+	<!-- 每周排名 --> 
+	<select id="getWeekSort" parameterType="map" resultMap="weekSortResult">
+		select * from (select count(*) as acceptCount,user_id from(select  distinct user_id,problem_id from oj_submissions where submitTime between #{start} and #{end} and result_id=1) temp group by user_id) a
+natural join(SELECT count(*) as submitCount,user_id FROM oj.oj_submissions  where submitTime between #{start} and #{end} group by user_id) b order by acceptCount desc,submitCount asc;
+	</select>
+	
+	<select id="getSubmissionsUsingFilter" parameterType="map"
+		resultMap="submissionResult" useCache="true">
+		select submission_id,submitTime,executeTime,useTime,
+		usememory,judgeScore,problem_id,user_id,result_id from oj_submissions
+		<where>
+			<if test="judgeResult != null">
+				result_id=#{judgeResult.result_id}
+			</if>
+			<if test="judgeResult == null">result_id is not null</if>
+		</where>
+		LIMIT #{startIndex},#{limit}
+	</select>
+	<select id="getSubmissions" resultMap="submissionResult"
+		useCache="true">
+		select submission_id,submitTime,executeTime,useTime,
+		usememory,judgeScore from oj_submissions
+	</select>
+
+	<select id="getSubmissionUsingSubmission_id" parameterType="long"
+		resultMap="submissionResult" useCache="true">
+		select
+		*
+		from oj_submissions
+		where submission_id =#{submission_id}
+	</select>
+	<select id="getSubmissionUsingUser_id" parameterType="long"
+		resultMap="submissionResult" useCache="true">
+		select
+		submission_id,submitTime,executeTime,useTime,
+		usememory,judgeScore from
+		oj_submissions
+		where user_id =#{user_id}
+	</select>
+	<select id="getSubmissionUsingUserAndProblem_id" parameterType="map"
+		resultMap="submissionResult" useCache="true">
+		select
+		* from
+		oj_submissions
+		where user_id =#{user_id} AND problem_id=#{problem_id}
+		order by submitTime desc
+	</select>
+	<select id="getSubmissionUsingProblem_id" parameterType="long"
+		resultMap="submissionResult" useCache="true">
+		select
+		submission_id,submitTime,executeTime,useTime,
+		usememory,judgeScore from
+		oj_submissions
+		where problem_id =#{problem_id}
+	</select>
+	<select id="getAcceptedSubmissionUsingProblem_id" parameterType="long"
+		resultMap="submissionResult" useCache="true">
+		select
+		submission_id,submitTime,executeTime,useTime,
+		usememory,judgeScore from
+		oj_submissions
+		where problem_id =#{problem_id} AND
+		judgeResultName="完全正确"
+		ORDER BY useTime DESC
+
+	</select>
+	<select id="getAcceptedSubmissionUsingUser_id" parameterType="long"
+		resultMap="submissionResult" useCache="true">
+		select
+		submission_id,submitTime,executeTime,useTime,
+		usememory,judgeScore from
+		oj_submissions
+		where user_id =#{user_id} AND judgeResultName="完全正确"
+	</select>
+	<select id="getAcceptedSubmissions" parameterType="long"
+		resultMap="submissionResult" useCache="true">
+		select
+		submission_id,submitTime,executeTime,useTime,
+		usememory,judgeScore from
+		oj_submissions
+		where judgeResultName="完全正确"
+	</select>
+	<select id="getNumsOfSubmissions" resultType="long">
+		select
+		count(submission_id) from oj_submissions
+	</select>
+	<select id="getMaxSubmissionId" resultType="long">
+		select max(submission_id) from oj_submissions
+	</select>
+	
+	<update id="updateSubmission" parameterType="top.yenvhang.model.Submission"
+		flushCache="true">
+		UPDATE oj_submissions
+		SET problem_id =
+		#{problem.problem_id}, user_id = #{user.user_id},
+		submitTime =
+		#{submitTime}, executeTime = #{executeTime}, useTime =
+		#{useTime},
+		usememory = #{usememory}, result_id =
+		#{judgeResult.result_id},
+		judgeScore = #{judgeScore}
+		WHERE submission_id =
+		#{submission_id}
+	</update>
+
+
+
+</mapper>
