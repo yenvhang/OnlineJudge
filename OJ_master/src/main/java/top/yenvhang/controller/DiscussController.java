@@ -19,13 +19,14 @@ import top.yenvhang.controller.base.BaseController;
 import top.yenvhang.mapper.CommentMapper;
 import top.yenvhang.model.Comment;
 import top.yenvhang.model.EntityType;
+import top.yenvhang.model.HostHolder;
 import top.yenvhang.model.User;
 import top.yenvhang.service.AccountService;
 import top.yenvhang.service.DiscussService; 
 
 @Controller
 @RequestMapping(value="/discuss")
-public class DiscussController extends BaseController {
+public class DiscussController  {
 	@Autowired
 	CommentMapper commentMapper;
 	@Autowired 
@@ -52,7 +53,7 @@ public class DiscussController extends BaseController {
 			@RequestParam(value="content") String content,
 			@RequestParam(value="to_id",required=false,defaultValue="0") long to_id,
 			HttpServletRequest request,HttpServletResponse response){
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		if(user!=null){
 			Comment comment=new Comment();
 			comment.setEntity_id(problemId);
@@ -75,7 +76,7 @@ public class DiscussController extends BaseController {
 			@RequestParam(value="content") String content,
 			@RequestParam(value="to_id") long to_id,
 			HttpServletRequest request,HttpServletResponse response){
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		if(user!=null){
 			Comment comment=new Comment();
 			comment.setEntity_id(commentId);
@@ -104,7 +105,7 @@ public class DiscussController extends BaseController {
 			@RequestParam(value="toId")long toId,
 			HttpServletRequest request){
 		Map<String,Object>result=new HashMap<String, Object>();
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		discussService.sendMessage(user.getUser_id(), toId, content);
 		result.put("sendSuccess",true);
 		return result;

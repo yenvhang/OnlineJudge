@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.mail.Message;
 
@@ -14,14 +15,18 @@ import top.yenvhang.dao.AccountDAO;
 import top.yenvhang.dao.EmailValidatorDAO;
 import top.yenvhang.mapper.UserMapper;
 import top.yenvhang.model.EmailValidation;
+import top.yenvhang.model.LoginTicket;
 import top.yenvhang.model.Problem;
 import top.yenvhang.model.User;
 import top.yenvhang.util.DigestUtils;
 import top.yenvhang.util.MailSender;
+import util.StringUtils;
 @Service
 public class AccountService {
 	@Autowired
 	UserMapper userMapper;
+	@Autowired
+	TicketService ticketService;
 	@Autowired
 	EmailValidatorDAO emailValidatorDAO;
 	
@@ -30,13 +35,9 @@ public class AccountService {
 		result.put("isUsernameEmpty",username.isEmpty());
 		result.put("isPasswordEmpty",password.isEmpty());
 		if(!result.get("isUsernameEmpty")&&!result.get("isPasswordEmpty")){
-			long startTime =System.currentTimeMillis();
-			System.out.println("start:"+startTime);
 			User user =getUserUsingUsernameOrEmail(username);
-			if(user!=null&&user.getPassword().equals(DigestUtils.md5Hex(password))){
+			if(user!=null&&user.getPassword().equals(DigestUtils.md5Hex(password+user.getSalt()))){
 				result.put("isSuccessful", true);
-				long end =System.currentTimeMillis();
-				System.out.println("end:"+(end-startTime));
 				return result;
 			}
 			
@@ -49,6 +50,8 @@ public class AccountService {
 		return result;
 	}
 	
+	
+
 	public User getUserUsingUsernameOrEmail(String name){
 		boolean isUsingEmail=name.indexOf('@')!=-1;
 		User user =null;
@@ -61,45 +64,18 @@ public class AccountService {
 		return user;
 	}
 	
-	public Map<String,Boolean> createUser(String username,String password,String email,
-			String phone,String school){
-		Map<String,Boolean> result =
-				getUserCreationResult(username, password, email, phone, school);
-		if(result.get("isSuccessful")){
-//			accountDao.createUser(username, password, email, phone, school);
-		}
-		
-		return result;
-	}
+
 	
-	private Map<String, Boolean> getUserCreationResult(String username,String password,String email,
-			String phone,String school) {
-		Map<String, Boolean> result = new HashMap<String, Boolean>();
-		result.put("isUsernameEmpty", username.isEmpty());
-		result.put("isUsernameLegal", isUsernameLegal(username));
-		result.put("isUsernameExists", isUsernameExists(username));
-		result.put("isPasswordEmpty", password.isEmpty());
-		result.put("isPasswordLegal", isPasswordLegal(password));
-		result.put("isEmailEmpty", email.isEmpty());
-		result.put("isEmailLegal", isEmailLegal(email));
-		result.put("isEmailExists", isEmailExists(email));
-		boolean isSuccessful=false;
-		isSuccessful= !result.get("isUsernameEmpty")  &&  result.get("isUsernameLegal")  &&
-							   !result.get("isUsernameExists") && !result.get("isPasswordEmpty")  &&
-								result.get("isPasswordLegal")  && !result.get("isEmailEmpty")	 &&
-								result.get("isEmailLegal")	 && !result.get("isEmailExists")	&&
-		result.put("isSuccessful", isSuccessful);
-		return result;
-	}
+	
 
 	/**
 	 * 验证用户名的合法性:
-	 * 规则: 用户名应由[A-Za-z0-9_]组成, 以字母起始且长度在6-16个字符.
+	 * 规则: 用户名应由[A-Za-z0-9_]组成, 以字母起始且长度在3-16个字符.
 	 * @param username - 用户名
 	 * @return 用户名是否合法
 	 */
 	private boolean isUsernameLegal(String username) {
-		return username.matches("^[A-Za-z][A-Za-z0-9_]{5,15}$");
+		return username.matches("^[A-Za-z][A-Za-z0-9_]{2,15}$");
 	}
 	
 	/**
@@ -258,8 +234,71 @@ public class AccountService {
 
 	public User getUserUsingUser_id(long user_id) {
 		return userMapper.getUserUsingUser_id(user_id);
-	
 	}
+	public Map<String, Boolean> createUser(String username, String email,String ip,String password, String password2,
+			String email2, String phone, String school) {
+		
+		Map<String,Boolean> result=getUserCreationResult(username, email, password, password2, email2, phone, school);
+		if(result!=null&&result.get("isSuccessful")){
+		String salt =UUID.randomUUID().toString().substring(0,5);
+		User user =new User(email,phone,ip,username,DigestUtils.md5Hex(password+salt),salt,school);
+		createUser(user);
+			
+		}
+		return result;
+		
+		
+	}
+	
+	/**
+	 * 注册用户
+	 */
+	public void createUser(User user){
+		userMapper.insertUser(user);
+	}
+	
+	/**
+	 * 
+	* getUserCreationResult:(判断注册表单数据的合法性). <br/>
+	* 
+	*
+	* @author 叶宇航
+	* @param username
+	* @param email
+	* @param password
+	* @param password2
+	* @param email2
+	* @param phone
+	* @param school
+	* @return
+	 */
+	public Map<String, Boolean> getUserCreationResult(String username, String email, String password, String password2,
+			String email2, String phone, String school){
+		Map<String, Boolean> result = new HashMap<String, Boolean>();
+		result.put("isUsernameEmpty", StringUtils.isEmpty(username));
+		result.put("isUsernameLegal", isUsernameLegal(username));
+		result.put("isUsernameExists", isUsernameExists(username));
+		result.put("isPasswordEmpty", password.isEmpty());
+		result.put("isPasswordLegal", isPasswordLegal(password));
+		result.put("isPasswordEqual", isPasswordEqual(password,password2));
+		result.put("isEmailEmpty", StringUtils.isEmpty(email));
+		result.put("isEmailLegal", isEmailLegal(email));
+		result.put("isEmailExists", isEmailExists(email));
+		
+		boolean isSuccessful = !result.get("isUsernameEmpty")  &&  result.get("isUsernameLegal")  &&
+							   !result.get("isUsernameExists") && !result.get("isPasswordEmpty")  &&
+								result.get("isPasswordLegal")  && !result.get("isEmailEmpty")	 && result.get("isPasswordEqual") &&
+								result.get("isEmailLegal")	 && !result.get("isEmailExists");
+		result.put("isSuccessful", isSuccessful);
+		return result;
+	}
+
+	private Boolean isPasswordEqual(String password,String password2) {
+			return password.equals(password2);
+		
+	}
+
+	
 
 	
 	

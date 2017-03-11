@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.sun.tools.internal.ws.processor.generator.GeneratorUtil;
 
 import top.yenvhang.controller.base.BaseController;
+import top.yenvhang.model.HostHolder;
 import top.yenvhang.model.Submission;
 import top.yenvhang.model.User;
 import top.yenvhang.service.CodeService;
@@ -29,7 +30,7 @@ import top.yenvhang.util.LimitUtil;
 
 @Controller
 @RequestMapping(value = "/submissions")
-public class SubmissionController extends BaseController {
+public class SubmissionController  {
 	@Autowired
 	SubmissionService submissionService;
 	@Autowired
@@ -63,8 +64,7 @@ public class SubmissionController extends BaseController {
 	@RequestMapping(value="/querySubmission/p",method=RequestMethod.GET)
 	public String querySubmissionsByProblemId(Model model,long problem_id,
 			HttpServletRequest request){
-		User user =getCurrentUser(request.getSession());
-		
+		User user =HostHolder.getUser();
 		List<Submission> submissions =submissionService.getSubmissionUsingUserAndProblem_id(user.getUser_id(), problem_id);
 		model.addAttribute("submissions", submissions);
 		model.addAttribute("problemId",problem_id);
@@ -73,7 +73,7 @@ public class SubmissionController extends BaseController {
 	@RequestMapping(value="/querySubmission/s",method=RequestMethod.GET)
 	public String querySubmissionsBySubmissionId(Model model,long submission_id,
 			HttpServletRequest request){
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		List<Submission> submissions =submissionService.getSubmissionUsingSubmissionId(submission_id);
 		model.addAttribute("submissions", submissions);
 		return "submission/mysubmission";

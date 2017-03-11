@@ -108,7 +108,7 @@
 					<form onsubmit="submission_code(); return false;">
 						<div style="margin: 0; padding: 0; display: inline">
 							<input name="utf8" type="hidden" value="&#x2713;" /> <input
-								name="problem_id" type="hidden" value="${problem.problem_id }" />
+								id="problem_id" name="problem_id" type="hidden" value="${problem.problem_id }" />
 						</div>
 						<div>
 							<label for="compiler_id">编译器</label><br /> <select
@@ -155,11 +155,7 @@
 
 		}
 		function submission_code() {
-			var problem_id = $
-			{
-				problem_id
-			}
-			;
+			var problem_id = $('#problem_id').val();
 			var code = $('#code').val();
 			createSubmissionAction(problem_id, code);
 			return false;
@@ -170,8 +166,8 @@
 				'code' : code
 			};
 			showLoading();
-			$
-					.ajax({
+			
+					$.ajax({
 						type : 'POST',
 						url : '${basePath}/problems/createSubmission.action',
 						data : postData,
@@ -234,8 +230,7 @@
 			} else {
 				c.val(editor.getValue()).show();
 				cm.hide();
-			}
-			;
+			};
 			return true;
 		}
 		function set_mode() {

@@ -1,10 +1,15 @@
-package util;
+package top.yenvhang.judge.util;
+
+
+
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
-public class IO_Utils {
+public class IOUtils {
 	public static String getString(InputStream ins){
 		BufferedInputStream buf =new BufferedInputStream(ins);
 		byte [] errs =new byte[1024];
@@ -30,6 +35,9 @@ public class IO_Utils {
 		}
 		
 		return sb.toString();
+	}
+	public static void write(String input,OutputStream outputStream){
+		BufferedOutputStream ous =new BufferedOutputStream(outputStream);
 	}
 	
 	

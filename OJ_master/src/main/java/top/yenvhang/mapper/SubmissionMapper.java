@@ -23,6 +23,7 @@ public interface SubmissionMapper {
 	public List<Submission> getAcceptedSubmissions();
 	public void updateSubmission(Submission submission);
 	public long getNumsOfSubmissions();
+	public String selectCodeBySubmissionId(int submission_id);
 	public long getMaxSubmissionId();
 	/**
 	 * 获取完成指定题目　排序后的用户列表

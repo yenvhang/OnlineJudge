@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import top.yenvhang.controller.base.BaseController;
 import top.yenvhang.model.Comment;
+import top.yenvhang.model.HostHolder;
 import top.yenvhang.model.Message;
 import top.yenvhang.model.MultipleComment;
 import top.yenvhang.model.User;
@@ -21,13 +22,13 @@ import top.yenvhang.service.MessageService;
 
 @Controller
 @RequestMapping(value="/message")
-public class MessageController extends BaseController {
+public class MessageController  {
 	@Autowired
 	MessageService messageService;
 	@RequestMapping(value="/personalMessage")
 	public String showPersonalMessageView(Model model,
 			HttpServletRequest request){
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		List<Message> convensations = null;
 		if(user!=null){
 			long userId =user.getUser_id();
@@ -48,7 +49,7 @@ public class MessageController extends BaseController {
 	
 	@RequestMapping(value="/systemMessage")
 	public String showSystemMessgaeView(HttpServletRequest request,Model model){
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		List<Comment> comments=messageService.getNewComments(user.getUser_id());
 		model.addAttribute("comments", comments);
 		return "message/systemMessage";

@@ -6,7 +6,6 @@
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/resources"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/webapp/WEB-INF"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/web"/>
-        <wb-resource deploy-path="/WEB-INF/classes" source-path="/judge"/>
         <property name="java-output-path" value="/OJ_master/target/classes"/>
         <property name="context-root" value="oj.web"/>
     </wb-module>

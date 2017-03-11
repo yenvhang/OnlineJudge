@@ -16,14 +16,23 @@ public class Submission implements Serializable{
 	private int usememory;
 	private JudgeResult judgeResult;
 	private int judgeScore;
+	private String code;
 
+	public String getCode() {
+	
+		return code;
+	}
+	public void setCode(String code) {
+	
+		this.code = code;
+	}
 	public Submission(){}
 	//提交代码　的构造函数
-	public Submission(long submissionId, Problem problem, User user, Date submitTime) {
-		this.submission_id = submissionId;
+	public Submission(Problem problem, User user, Date submitTime,String code) {
 		this.problem = problem;
 		this.user = user;
 		this.submitTime = submitTime;
+		this.code=code;
 		
 	}
 	public Submission(Problem problem, User user, Date submitTime) {

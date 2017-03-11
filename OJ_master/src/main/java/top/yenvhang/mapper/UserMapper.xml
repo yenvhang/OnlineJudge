@@ -7,6 +7,7 @@
 		<id property="user_id" column="user_id"/>
 		<result property="username" column="username"/>
 		<result property="password" column="password"/>
+		<result property="salt" column="salt"/>
 		<result property="email" column="email" />
 		<result property="phone" column="phone"/>
 		<result property="ip" column="ip"/>
@@ -54,8 +55,8 @@
 	</select>
 	
 	<insert id="insertUser" parameterType="top.yenvhang.model.User">
-		insert into oj_users(username,password,email,submitted,solved,score,signature) values(
-		#{username},#{password},#{email},#{submitted},#{solved},#{score},#{signature})
+		insert into oj_users(username,password,salt,email,phone,ip,school) values(
+		#{username},#{password},#{salt},#{email},#{phone},#{ip},#{school})
 	</insert>
 	
 </mapper>

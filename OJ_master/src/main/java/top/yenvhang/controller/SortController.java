@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.sun.tools.internal.xjc.model.CAdapter;
 
 import top.yenvhang.controller.base.BaseController;
+import top.yenvhang.model.HostHolder;
 import top.yenvhang.model.Sort;
 import top.yenvhang.model.Submission;
 import top.yenvhang.model.User;
@@ -29,7 +30,7 @@ import top.yenvhang.util.LimitUtil;
 
 @Controller
 @RequestMapping(value ="/sort")
-public class SortController extends BaseController {
+public class SortController  {
 	@Autowired
 	SortService sortService;
 
@@ -45,7 +46,7 @@ public class SortController extends BaseController {
 		long totals = getNumsofUsers();
 		LimitAttribute limitAttribute = limitUtil.limit(model, totals, page, pageSize);
 		List<User> users = sortService.getUsersUsingFilters(limitAttribute.startIndex, limitAttribute.pageSize);
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		if(user!=null){ 
 			long rank =sortService.getRankUsingUserId(user.getUser_id());
 			model.addAttribute("rank",rank);
@@ -67,7 +68,7 @@ public class SortController extends BaseController {
 			HttpServletRequest request, HttpServletResponse response) {
 		LimitUtil limitUtil = new LimitUtil();
 		long totals = getNumsOfACsubmissionUsingProblemId(problemId);
-		User user =getCurrentUser(request.getSession());
+		User user =HostHolder.getUser();
 		LimitAttribute limitAttribute = limitUtil.limit(model, totals, page, pageSize);
 		List<Submission> submissions = sortService.getUsersACUsingProblemId(limitAttribute.startIndex,limitAttribute.pageSize,
 				problemId);

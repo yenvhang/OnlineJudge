@@ -9,6 +9,7 @@ public class User {
 	private String ip;
 	private String username;
 	private String password;
+	private String salt;
 	private String school;
 	private int submitted;
 	private int solved;
@@ -16,6 +17,14 @@ public class User {
 	private String signature;
 	
 	
+	public String getSalt() {
+	
+		return salt;
+	}
+	public void setSalt(String salt) {
+	
+		this.salt = salt;
+	}
 	public String getSignature() {
 		return signature;
 	}
@@ -82,6 +91,17 @@ public class User {
 	public void setSolved(int solved) {
 		this.solved = solved;
 	}
+	public User(){}
+	public User(String email, String phone, String ip, String username, String password, String salt, String school) {
+		this.email = email;
+		this.phone = phone;
+		this.ip = ip;
+		this.username = username;
+		this.password = password;
+		this.salt = salt;
+		this.school = school;
+	}
+	
 	
 	
 	

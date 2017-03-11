@@ -1,25 +1,22 @@
 package top.yenvhang.service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import core.JudgeBin;
+import top.yenvhang.judge.core.JudgeBin2;
 import top.yenvhang.mapper.CodeMapper;
 import top.yenvhang.mapper.JudgeResultMapper;
 import top.yenvhang.mapper.RunInfoMapper;
 import top.yenvhang.mapper.SubmissionMapper;
-import top.yenvhang.mapper.UserMapper;
-import top.yenvhang.model.Code;
 import top.yenvhang.model.JudgeResult;
 import top.yenvhang.model.Problem;
-import top.yenvhang.model.RunInfo;
 import top.yenvhang.model.Submission;
 import top.yenvhang.model.User;
-import util.StringUtil;
 
 @Service
 public class SubmissionService {
@@ -35,6 +32,10 @@ public class SubmissionService {
 	AccountService accountService;
 	@Autowired
 	ProblemService problemService;
+	@Autowired
+	JudgeBin2 judgeBin2;
+	@Autowired
+//	private MessageSender messageSender;
 	/**
 	 * 创建Submission
 	 * @param user
@@ -45,29 +46,42 @@ public class SubmissionService {
 	
 	public Submission createSubmission(User user, long problem_id, String str_code) {
 		Problem problem =problemService.getProblemById(problem_id);
-		Submission submission =new Submission(problem, user, new Date());  
-		Code code =new Code(); 
-		code.setCode(str_code);
-		RunInfo runInfo =new RunInfo();
-		JudgeBin judgeBin =new JudgeBin(user, problem, submission,code,runInfo);
-		judgeBin.process();
-		JudgeResult judgeResult =judgeResultMapper.getJudgeResultUsingName(submission.getJudgeResult().getJudgeResultName());
-		submission.setJudgeResult(judgeResult);
+		Submission submission =new Submission(problem, user, new Date(),str_code);  
 		submissionMapper.insertSubmission(submission);
-		long submissionId=getLastSubmissionId();
-		if(!StringUtil.isEmpty(runInfo.getRunInfo())){
-			runInfo.setSubmissionId(submissionId);
-			runInfoMapper.insertRunInfo(runInfo);
-		}
-		code.setSubmissionId(submissionId);
-		codeMapper.insertCode(code);
-		accountService.updateUserMessgae(user.getUser_id(),user.getSubmitted(),user.getSolved(),user.getScore());
-		problemService.UpdateProblemMessage(problem.getProblem_id(), problem.getSubmitted(),problem.getSolved());
+		long submissionId=submission.getSubmission_id();
+		createSubmissionTask(submissionId);
+//		RunInfo runInfo =new RunInfo();
+//		JudgeResult judgeResult=new JudgeResult();
+//		judgeBin2.createNewJudgeTask(submission,code.getCode(),new JudgeListener(judgeResult, runInfo));
+//		judgeResult =judgeResultMapper.getJudgeResultUsingName(judgeResult.getJudgeResultName());
+//		submission.setJudgeResult(judgeResult);
+		
+		
+//
+
+//		codeMapper.insertCode(code);
+//		accountService.updateUserMessgae(user.getUser_id(),user.getSubmitted(),user.getSolved(),user.getScore());
+//		problemService.UpdateProblemMessage(problem.getProblem_id(), problem.getSubmitted(),problem.getSolved());
 		
 		return submission;
 	}
 	
+	private void createSubmissionTask(long submissionId) {
+		
+			Map<String, Object> mapMessage = new HashMap<String, Object>();
+			mapMessage.put("event", "SubmissionCreated");
+			mapMessage.put("submissionId", submissionId);
+			
+//			messageSender.sendMessage(mapMessage);
+		}
+		
+			
+		
 	
+
+	private String queryCode(int submissionId){
+		return submissionMapper.selectCodeBySubmissionId(submissionId);
+	}
 	/**
 	 * 设置提交结果
 	 * @return

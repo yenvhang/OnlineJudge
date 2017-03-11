@@ -13,16 +13,21 @@
 	http://www.springframework.org/schema/aop
 	http://www.springframework.org/schema/aop/spring-aop.xsd
 	http://activemq.apache.org/schema/core
-	http://activemq.apache.org/schema/core/activemq-core.xsd">
-
+	http://activemq.apache.org/schema/core/activemq-core-5.8.0.xsd">
+	<mvc:interceptors>
+      <mvc:interceptor>
+        <mvc:mapping path="/**"/>
+	        <bean class="top.yenvhang.intercepter.PassportInterceptor">
+	        </bean>
+    	</mvc:interceptor>
+	</mvc:interceptors> 
 	<context:annotation-config />
-	<mvc:annotation-driven />
-	<context:component-scan base-package="top/yenvhang" />
+	<mvc:annotation-driven /> 
+	<bean id="interceptor" class="top.yenvhang.aspect.InterceptorAspect"></bean>
+	<context:component-scan base-package="top" />
 	<aop:aspectj-autoproxy />
-
-
 	<mvc:resources mapping="/assets/**" location="/assets/" />
-
+	
 	<bean
 		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
 		<property name="prefix" value="/WEB-INF/views/" />
@@ -59,10 +64,34 @@
 		<property name="basePackage" value="top.yenvhang.mapper" />
 		<property name="sqlSessionFactoryBeanName" value="sessionFactory"></property>
 	</bean>
-	<bean id="transactionManager"
+	
+	<!-- Message Service -->
+<!-- 	<bean id="amqConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+		<constructor-arg index="0" value="tcp://localhost:61616" />
+	</bean>
+	<bean id="connectionFactory"
+		class="org.springframework.jms.connection.CachingConnectionFactory">
+		<constructor-arg ref="amqConnectionFactory" />
+	</bean>
+	<bean id="defaultDestination" class="org.apache.activemq.command.ActiveMQQueue">
+		<constructor-arg index="0" value="vojSubmissionTaskQueue" />
+	</bean>
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="defaultDestination" ref="defaultDestination" />
+	</bean>
+	<bean class="org.springframework.jms.listener.SimpleMessageListenerContainer">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="destinationName" value="vojJudgeResultQueue" />
+		<property name="messageListener" ref="messageReceiver" />
+	</bean>
+	<bean id="messageSender" class="org.verwandlung.voj.web.messenger.MessageSender"></bean>
+	<bean id="messageReceiver" class="org.verwandlung.voj.web.messenger.MessageReceiver"></bean>
+	 -->
+<!-- 	<bean id="transactionManager"
 		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
 		<property name="dataSource" ref="dataSource" />
 	</bean>
-	<tx:annotation-driven transaction-manager="transactionManager" />
+	<tx:annotation-driven transaction-manager="transactionManager" /> -->
 
 </beans>    

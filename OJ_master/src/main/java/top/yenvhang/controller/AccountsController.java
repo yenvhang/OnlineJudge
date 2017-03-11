@@ -1,28 +1,38 @@
 package top.yenvhang.controller;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.ibatis.annotations.Param;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.alibaba.druid.stat.TableStat.Mode;
+
 import top.yenvhang.controller.base.BaseController;
+import top.yenvhang.model.HostHolder;
+import top.yenvhang.model.LoginTicket;
 import top.yenvhang.model.Problem;
 import top.yenvhang.model.User;
 import top.yenvhang.service.AccountService;
+import top.yenvhang.service.TicketService;
 import top.yenvhang.util.LimitAttribute;
 import top.yenvhang.util.LimitUtil;
 
@@ -30,32 +40,34 @@ import top.yenvhang.util.LimitUtil;
 
 @Controller
 @RequestMapping(value="/accounts")
-public class AccountsController extends BaseController {
+public class AccountsController  {
+    private static Logger logger = Logger.getLogger(AccountsController.class);  
 	@Autowired
 	AccountService accountService;
+	
+	@Autowired
+	TicketService ticketService;
 	/**
 	 * 显示用户登录界面　处理用户注销
 	 */
+	
+	
 	@RequestMapping(value="/login",method=RequestMethod.GET)
 	public ModelAndView loginView(
-			@RequestParam(value="logout",required =false,defaultValue="false")
-			boolean isLogout,
 			HttpServletRequest request,HttpServletResponse response){
 			HttpSession session =request.getSession();
 			ModelAndView view =null;
-			if(isLogout){
-				destorySession(request, session);
-				
-			}
 			//如果用户已经登录
-		
 			view =new ModelAndView("account/login");
-				
-			
 			return view;
 		
 	}
 	
+	@RequestMapping(value="/logout",method=RequestMethod.GET)
+	public String logoutView(@CookieValue("loginticket") String loginticket){
+		ticketService.logout(loginticket);
+		return "redirect:/accounts/login";
+	}
 		/**
 		 * 处理用户的登录请求
 		 * @param username
@@ -73,13 +85,20 @@ public class AccountsController extends BaseController {
 				String password,
 				@RequestParam(value="rememberMe",required=false)
 				boolean isAutoLoginAllowed,
-				HttpServletRequest request){
+				HttpServletRequest request,HttpServletResponse response){
 			ModelAndView model=new ModelAndView();
 			Map<String,Boolean> result =accountService.isAllowedToLogin(username, password);
 			//创建用户session 
 		 if(result!=null&&result.get("isSuccessful")){
 			 User user =accountService.getUserUsingUsernameOrEmail(username);
-			 createUserSession(request, user, isAutoLoginAllowed);
+			 LoginTicket loginTicket=addLoginTicket(user.getUser_id());
+			 Cookie cookie =new Cookie ("loginticket", loginTicket.getTicket());
+			 cookie.setPath("/");
+			 if(isAutoLoginAllowed){
+				 cookie.setMaxAge(24*3600*5);
+			 }
+			 response.addCookie(cookie);
+//			 createUserSession(request, user, isAutoLoginAllowed);
 			 model.setViewName("redirect:/problems");
 		 }
 		 else{
@@ -94,7 +113,7 @@ public class AccountsController extends BaseController {
 	 */
 	@RequestMapping(value="/register",method=RequestMethod.GET)
 	public ModelAndView registerView(){
-		return new ModelAndView("accounts/register");
+		return new ModelAndView("account/register");
 	}
 	/**
 	 * 处理用户注册请求
@@ -106,12 +125,15 @@ public class AccountsController extends BaseController {
 	 * @param request
 	 * @return
 	 */
-	@RequestMapping(value="/register.action",method=RequestMethod.POST)
-	public @ResponseBody Map<String,Boolean> registerAction(
+	@RequestMapping(value="/register",method=RequestMethod.POST)
+	@ResponseBody
+	public  Map<String,Boolean> registerAction(
 			@RequestParam(value="username",required=true)
 			String username,
 			@RequestParam(value="password",required=true)
 			String password,
+			@RequestParam(value="password2",required=true)
+			String password2,
 			@RequestParam(value="email",required=true)
 			String email,
 			@RequestParam(value="school",required=true)
@@ -120,7 +142,17 @@ public class AccountsController extends BaseController {
 			String phone,
 			HttpServletRequest request){
 		 Map<String,Boolean> result =new HashMap<String, Boolean>();
-		 result =accountService.createUser(username, password, email, phone, school);
+		 String ip =request.getLocalAddr();
+		 try{
+			 result =accountService.createUser(username,email,ip,password,password2,email, phone, school);
+			 logger.info(String.format("User: [Username=%s] created at %s.", 
+						new Object[] {username, ip}));
+		 }
+		 catch(Exception e){
+			 logger.error(String.format("User: [Username=%s] created failed at %s.", 
+						new Object[] {username, ip}));
+			 request.setAttribute("isSuccessful", false);
+		 }
 		 if(result!=null&&result.get("isSuccessful")){
 			 User user =accountService.getUserUsingUsernameOrEmail(username);
 			 createUserSession(request, user, false);
@@ -140,9 +172,9 @@ public class AccountsController extends BaseController {
 			HttpServletRequest request, HttpServletResponse response){
 			HttpSession session =request.getSession();
 		ModelAndView view=null;
-		if ( isLogin(session) ) {
-			view = new ModelAndView("redirect:/");
-		} else {
+//		if ( isLogin(session) ) {
+//			view = new ModelAndView("redirect:/");
+//		} else {
 			boolean isTokenValid = false;
 			if ( token != null && !token.isEmpty() ) {
 				isTokenValid = accountService.isEmailValidationValid(email, token);
@@ -152,7 +184,7 @@ public class AccountsController extends BaseController {
 			view.addObject("email", email);
 			view.addObject("token", token);
 			view.addObject("isTokenValid", isTokenValid);
-		}
+//		}
 		return view;
 	}
 	
@@ -197,15 +229,15 @@ public class AccountsController extends BaseController {
 	
 	
 	
+	
 	/**
-	 * 创建用户Sesison
+	 * 修改用户成绩
 	 * @param request
 	 * @param user
 	 * @param isAutoLoginAllowed
 	 */
-	
 	/**
-	 * 修改用户成绩
+	 * 创建用户Sesison
 	 * @param request
 	 * @param user
 	 * @param isAutoLoginAllowed
@@ -235,7 +267,7 @@ public class AccountsController extends BaseController {
 		User user=null;
 		
 		if(userId==0){
-			user =getCurrentUser(request.getSession());
+			user =HostHolder.getUser();
 		}
 		else{
 			user =accountService.getUserUsingUser_id(userId);
@@ -243,6 +275,14 @@ public class AccountsController extends BaseController {
 		
 		model.addAttribute("tempuser",user);
 		return "account/personal";
+	}
+	
+	private LoginTicket addLoginTicket(long user_id) {
+		Date date =new Date();
+		date.setTime(date.getTime()+3600*1000*24);
+		LoginTicket loginTicket=new LoginTicket(user_id,UUID.randomUUID().toString().replaceAll("-",""),date,1);
+		ticketService.createLoginTicket(loginTicket);
+		return loginTicket;
 	}
 	
 	

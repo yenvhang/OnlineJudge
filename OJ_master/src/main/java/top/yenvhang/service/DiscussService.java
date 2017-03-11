@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import top.yenvhang.mapper.MessageMapper;
-import util.StringUtil;
+import util.StringUtils;
 
 @Service
 public class DiscussService {
